@@ -11,9 +11,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AddCircle
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Divider
@@ -21,6 +24,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -28,16 +32,89 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.delay
 import org.w3c.dom.NameList
 
 @Composable
+fun FormTimer(
+    duration: Int,
+    timeLeft: Int,
+    onPause:() -> Unit = {},
+    onReset: () -> Unit = {},
+    onComplete: () -> Unit = {}
+){
+    var timeLeft by remember {
+        mutableIntStateOf(duration)
+    }
+
+    var isPaused by remember {
+        mutableStateOf(false)
+    }
+    LaunchedEffect(key1 = timeLeft) {
+        while (timeLeft > 0 && !isPaused){
+            delay(1000L)
+            timeLeft --
+        }
+        onComplete()
+    }
+
+    Row(){
+        Text(
+            text = "Time left: ${timeLeft.toString()}",
+            modifier = Modifier
+                .padding(16.dp)
+            ,fontSize = 20.sp
+        )
+        Spacer(
+            modifier = Modifier
+                .weight(1f)
+        )
+        Button(
+            modifier = Modifier.padding(16.dp),
+            onClick = {
+                isPaused = true
+                onPause()
+            }) {
+            Icon(
+                modifier = Modifier
+                    .size(20.dp),
+                imageVector = Icons.Default.Warning,
+                contentDescription = null
+            )
+        }
+        Button(
+            modifier = Modifier.padding(16.dp),
+            onClick = {
+               isPaused = false
+                timeLeft = duration
+                onReset()
+            }) {
+            Icon(
+                modifier = Modifier
+                    .size(20.dp),
+                imageVector = Icons.Default.Refresh,
+                contentDescription = null
+            )
+        }
+    }
+}
+
+@Composable
 fun NewPerson() {
+
+    var isFormEnabled by remember {
+        mutableStateOf(true)
+    }
+
 
     var name by remember {
         mutableStateOf("")
@@ -58,10 +135,21 @@ fun NewPerson() {
             .fillMaxSize()
     ) {
 
+       /* FormTimer(
+            duration = 20,
+            onReset = {
+               isFormEnabled = true
+            },
+            onComplete = {
+                isFormEnabled = false
+            }
+        )*/
+
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.Center
         ) {
+
             Text(
                 text = "ADD PERSON",
                 style = TextStyle(fontWeight = FontWeight.Bold),
@@ -99,7 +187,10 @@ fun NewPerson() {
                 placeholder = { Text("Enter age") },
                 onValueChange = { text ->
                     age = text
-                })
+                },
+                keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number)
+            )
+
         }
 
         Row(
